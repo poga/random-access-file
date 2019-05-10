@@ -225,8 +225,10 @@ tape('rmdir option with non empty parent', function (t) {
 
 tape('del', function (t) {
   var file = raf(gen())
+  let originalData = new Array(100)
+  originalData.fill(1, 0, 100)
 
-  file.write(0, Buffer.alloc(100), function (err) {
+  file.write(0, Buffer.from(originalData), function (err) {
     t.error(err, 'no error')
     file.stat(function (err, st) {
       t.error(err, 'no error')
@@ -236,12 +238,25 @@ tape('del', function (t) {
         file.stat(function (err, st) {
           t.error(err, 'no error')
           t.same(st.size, 100, 'inplace del, same size')
-          file.del(50, 50, function (err) {
+
+          file.read(0, 40, function (err, buffer) {
             t.error(err, 'no error')
-            file.stat(function (err, st) {
+            let d = new Array(40)
+            d.fill(0, 0, 40)
+            t.same(buffer, Buffer.from(d), 'data cleared')
+            file.read(40, 60, function (err, buffer) {
               t.error(err, 'no error')
-              t.same(st.size, 50)
-              file.destroy(() => t.end())
+              let d = new Array(60)
+              d.fill(1, 0, 60)
+              t.same(buffer, Buffer.from(d), 'data not touched')
+              file.del(50, 50, function (err) {
+                t.error(err, 'no error')
+                file.stat(function (err, st) {
+                  t.error(err, 'no error')
+                  t.same(st.size, 50)
+                  file.destroy(() => t.end())
+                })
+              })
             })
           })
         })

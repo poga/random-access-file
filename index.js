@@ -90,8 +90,19 @@ RandomAccessFile.prototype._del = function (req) {
 
   function onstat (err, st) {
     if (err) return req.callback(err)
-    if (req.offset + req.size < st.size) return req.callback(null)
-    fs.ftruncate(fd, req.offset, ontruncate)
+    // if (req.offset + req.size < st.size) return req.callback(null)
+    if (req.offset + req.size >= st.size) {
+      fs.ftruncate(fd, req.offset, ontruncate)
+    } else {
+      var a = new Array(req.size)
+      a.fill(0, 0, a.length)
+      var emptyBuffer = Buffer.from(a)
+      fs.write(fd, emptyBuffer, 0, emptyBuffer.length, req.offset, onclear)
+    }
+  }
+
+  function onclear (err) {
+    req.callback(err)
   }
 
   function ontruncate (err) {
